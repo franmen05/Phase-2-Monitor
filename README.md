@@ -40,6 +40,7 @@ The `InverterStatusService` handles all network requests and logic. It uses Coro
 ## Screenshots
 
 *(Add screenshots here)*
+![img.png](img.png)
 
 ---
 Developed as a utility for inverter monitoring and energy management.
