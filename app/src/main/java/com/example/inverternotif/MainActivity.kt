@@ -35,11 +35,11 @@ import com.example.inverternotif.api.RealtimeResponse
 import com.example.inverternotif.ui.SessionManager
 import com.example.inverternotif.ui.theme.InverterNotifTheme
 import kotlinx.coroutines.launch
+import androidx.core.content.edit
 
 @OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : ComponentActivity() {
 
-    private val CHANNEL_ID = "inverter_channel"
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var sessionManager: SessionManager
 
@@ -129,11 +129,10 @@ class MainActivity : ComponentActivity() {
                             onClick = {
                                 scope.launch {
                                     isApplying = true
-                                    with(sharedPreferences.edit()) {
+                                    sharedPreferences.edit {
                                         putString("pollingInterval", pollingInterval)
                                         putString("powerOnMessage", powerOnMessage)
                                         putString("powerOffMessage", powerOffMessage)
-                                        apply()
                                     }
                                     startInverterService()
                                     isApplying = false
@@ -155,7 +154,7 @@ class MainActivity : ComponentActivity() {
             val name = "Inverter Status"
             val descriptionText = "Notifications for inverter status"
             val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+            val channel = NotificationChannel(InverterStatusService.NOTIFICATION_CHANNEL_ID, name, importance).apply {
                 description = descriptionText
             }
             val notificationManager: NotificationManager =
@@ -175,11 +174,7 @@ class MainActivity : ComponentActivity() {
             putExtra(InverterStatusService.EXTRA_POWER_ON_MESSAGE, savedPowerOnMessage)
             putExtra(InverterStatusService.EXTRA_POWER_OFF_MESSAGE, savedPowerOffMessage)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent)
-        } else {
-            startService(intent)
-        }
+        startForegroundService(intent)
     }
 
     private fun askNotificationPermission() {
@@ -282,7 +277,7 @@ fun InverterStatusCard(
                     StatusRow("Output Voltage:", outputVoltage)
                     StatusRow("Battery voltage:", batteryVoltage)
                     StatusRow("Battery % Inv:", batteryPercentageInv)
-                    
+
                     if (batteryPercentage.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(24.dp))
                         Text(
@@ -373,30 +368,6 @@ fun SettingsCard(
                 modifier = Modifier.fillMaxWidth()
             )
         }
-    }
-}
-
-private fun calculateBatteryPercentage(voltage: Float): Int {
-    val multiplier = when {
-        voltage > 40f -> 4f
-        voltage > 20f -> 2f
-        else -> 1f
-    }
-    val v = voltage / multiplier
-    return when {
-        v >= 13.4f -> 100
-        v >= 13.2f -> 95
-        v >= 13.1f -> 90
-        v >= 13.05f -> 80
-        v >= 13.0f -> 70
-        v >= 12.95f -> 60
-        v >= 12.9f -> 50
-        v >= 12.85f -> 40
-        v >= 12.8f -> 30
-        v >= 12.7f -> 20
-        v >= 12.4f -> 10
-        v >= 12.0f -> 5
-        else -> 0
     }
 }
 

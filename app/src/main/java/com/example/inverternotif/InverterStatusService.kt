@@ -77,30 +77,6 @@ class InverterStatusService : Service() {
         return START_STICKY
     }
 
-    private fun getBatteryPercentage(voltage: Float): Int {
-        val multiplier = when {
-            voltage > 40f -> 4f
-            voltage > 20f -> 2f
-            else -> 1f
-        }
-        val v = voltage / multiplier
-        return when {
-            v >= 13.4f -> 100
-            v >= 13.2f -> 95
-            v >= 13.1f -> 90
-            v >= 13.05f -> 80
-            v >= 13.0f -> 70
-            v >= 12.95f -> 60
-            v >= 12.9f -> 50
-            v >= 12.85f -> 40
-            v >= 12.8f -> 30
-            v >= 12.7f -> 20
-            v >= 12.4f -> 10
-            v >= 12.0f -> 5
-            else -> 0
-        }
-    }
-
     private fun startForegroundService() {
         createForegroundNotificationChannel()
         val notification = createForegroundNotification("Checking inverter status...")
@@ -109,7 +85,7 @@ class InverterStatusService : Service() {
 
     private fun createForegroundNotification(text: String): Notification {
         return NotificationCompat.Builder(this, FOREGROUND_CHANNEL_ID)
-            .setContentTitle("Inverter Monitor ")
+            .setContentTitle("Inverter Notif")
             .setContentText(text)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -133,9 +109,7 @@ class InverterStatusService : Service() {
     private suspend fun fetchData() {
         val repo = repository ?: return
         
-        // El usuario indica que toda la info está en realtimeData (querySPDeviceLastData)
         val realtimeResult = repo.getRealtimeData()
-//        val energyFlowResult = repo.getEnergyFlow()
 
         realtimeResult.onSuccess { response ->
             if (response.isSuccess) {
@@ -144,19 +118,12 @@ class InverterStatusService : Service() {
                 var batteryVoltage: Float? = null
                 var allValuesZero = true
 
-//                energyFlowResult.onSuccess { flow ->
-//                    flow.dat?.let {
-//                        statusBuilder.append("PV: ${it.pvPower}W | Batt: ${it.battPower}W | SOC: ${it.soc}%\n\n")
-//                    }
-//                }
-
-                response.dat?.pars?.inputVoltage?.forEach { param ->
+                response.dat?.pars?.allParams()?.forEach { param ->
                     val name = param.name
                     val value = param.value
                     val unit = param.unit
                     val floatVal = value.toFloatOrNull()
 
-                    // Identificar voltajes por ID o nombre
                     if (name.contains("Battery Voltage", ignoreCase = true) || 
                         name.contains("Vbatt", ignoreCase = true) ||
                         name.contains("Battery volt", ignoreCase = true)) {
@@ -166,15 +133,14 @@ class InverterStatusService : Service() {
                         inputVoltageValue = floatVal
                     }
 
-                    // Formatear el nombre si es el ID específico indicado por el usuario
                     val displayName = if (param.id == "bc_load_voltage") "Output Voltage" else name
-                    statusBuilder.append("$displayName: $value $unit \n")
+                    statusBuilder.append("$displayName: $value $unit\n")
                     
                     if (floatVal != null && floatVal != 0f) allValuesZero = false
                 }
 
                 batteryVoltage?.let {
-                    val percentage = getBatteryPercentage(it)
+                    val percentage = calculateBatteryPercentage(it)
                     statusBuilder.append("\nBatería: $percentage% (Estimado LiFePO4)\n")
                 }
 
@@ -189,7 +155,6 @@ class InverterStatusService : Service() {
                         val hadPower = lastInputVoltage?.let { it > 0f }
                         val hasPower = currentVoltage > 0f
 
-                        // Corregido: Enviar notificación inicial (hadPower == null) o en cambio de estado
                         if (hadPower == null || hadPower != hasPower) {
                             sendStateChangeNotification("Inverter Status", if (hasPower) powerOnMessage else powerOffMessage)
                         }
