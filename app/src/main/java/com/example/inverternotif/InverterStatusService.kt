@@ -93,17 +93,15 @@ class InverterStatusService : Service() {
     }
 
     private fun createForegroundNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Inverter Background Service"
-            val descriptionText = "Shows that the app is checking the inverter status in the background"
-            val importance = NotificationManager.IMPORTANCE_LOW
-            val channel = NotificationChannel(FOREGROUND_CHANNEL_ID, name, importance).apply {
-                description = descriptionText
-            }
-            val notificationManager: NotificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+        val name = "Inverter Background Service"
+        val descriptionText = "Shows that the app is checking the inverter status in the background"
+        val importance = NotificationManager.IMPORTANCE_LOW
+        val channel = NotificationChannel(FOREGROUND_CHANNEL_ID, name, importance).apply {
+            description = descriptionText
         }
+        val notificationManager: NotificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
     }
 
     private suspend fun fetchData() {
