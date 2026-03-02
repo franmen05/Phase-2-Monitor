@@ -1,6 +1,8 @@
 # InverterNotif
 
-InverterNotif is an Android application designed to monitor the status of solar inverters via the ShineMonitor API. It provides real-time updates and notifications regarding power availability and battery levels, specifically optimized for LiFePO4 battery systems.
+InverterNotif (Phase 2 inverter monitor ) is an Android application designed to monitor the status of solar inverters via the dessmonitor API. It provides real-time updates and notifications regarding power availability and battery levels, specifically optimized for LiFePO4 battery systems.
+
+Inverter of tests: https://suennaelectronica.com/productos/inversor-phase-ii-lv-solar-1-2kw-120vac-12vdc-senoidal/
 
 ## Features
 
