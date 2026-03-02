@@ -9,6 +9,9 @@ import com.example.inverternotif.api.DeviceInfoResponse
 import com.example.inverternotif.api.EnergyFlowResponse
 import com.example.inverternotif.api.PlantInfoResponse
 import com.example.inverternotif.api.RealtimeResponse
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -29,13 +32,33 @@ class InverterViewModel(private val repo: DessMonitorRepository) : ViewModel() {
     private val _isLoading = MutableLiveData(false)
     val isLoading: LiveData<Boolean> = _isLoading
 
+    private var pollingJob: Job? = null
+
+    fun startPolling(intervalSeconds: Long) {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
+            while (isActive) {
+                refresh()
+                delay(intervalSeconds * 1000)
+            }
+        }
+    }
+
+    fun stopPolling() {
+        pollingJob?.cancel()
+        pollingJob = null
+    }
+
     fun refresh() {
         viewModelScope.launch {
-            _isLoading.value = true
+            // No ponemos _isLoading.value = true en el refresh automático para no parpadear la UI
+            // solo lo hacemos si es un refresh manual o la primera vez.
+            // Para simplificar, lo dejamos sin el loading flag si ya hay datos.
+//            if (_realtimeData.value == null)
+                _isLoading.value = true
+
             _realtimeData.value = repo.getRealtimeData()
-//            _energyFlow.value   = repo.getEnergyFlow()
-//            _plantInfo.value    = repo.getPlantInfo()
-//            _deviceInfo.value   = repo.getDeviceInfo()
+            
             _isLoading.value = false
         }
     }

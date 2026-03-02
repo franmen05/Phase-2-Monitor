@@ -87,6 +87,12 @@ class MainActivity : ComponentActivity() {
                 var isApplying by remember { mutableStateOf(false) }
                 val scope = rememberCoroutineScope()
 
+                // Automatic polling based on saved configuration
+                LaunchedEffect(savedPollingInterval) {
+                    val interval = savedPollingInterval.toLongOrNull() ?: 60L
+                    viewModel.startPolling(interval)
+                }
+
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = {
@@ -134,7 +140,10 @@ class MainActivity : ComponentActivity() {
                                         putString("powerOnMessage", powerOnMessage)
                                         putString("powerOffMessage", powerOffMessage)
                                     }
+                                    // Restart service with new params
                                     startInverterService()
+                                    // Update polling in ViewModel immediately
+                                    viewModel.startPolling(pollingInterval.toLongOrNull() ?: 60L)
                                     isApplying = false
                                 }
                             },
@@ -147,20 +156,19 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Inverter Status"
-            val descriptionText = "Notifications for inverter status"
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel(InverterStatusService.NOTIFICATION_CHANNEL_ID, name, importance).apply {
-                description = descriptionText
-            }
-            val notificationManager: NotificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+        val name = "Inverter Status"
+        val descriptionText = "Notifications for inverter status"
+        val importance = NotificationManager.IMPORTANCE_HIGH
+        val channel = NotificationChannel(InverterStatusService.NOTIFICATION_CHANNEL_ID, name, importance).apply {
+            description = descriptionText
         }
+        val notificationManager: NotificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
     }
 
     private fun startInverterService() {
